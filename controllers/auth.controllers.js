@@ -3,9 +3,19 @@ import { User } from "../models/users.model.js";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 dotenv.config();
+
+const isValidUsername = (username) => {
+  return typeof username === "string" && !/[$\{\}]/.test(username);
+};
+
 export const useAuthController = () => {
   const login = async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password } = req.body || {};
+    if (!isValidUsername(username) || typeof password !== "string") {
+      return res
+        .status(400)
+        .json({ status: 400, message: "Invalid request payload" });
+    }
     const user = await User.findOne({ username: username });
     if (!user) {
       return res.status(404).json({ status: 404, message: "User not found" });
@@ -43,11 +53,15 @@ export const useAuthController = () => {
   };
 
   const register = async (req, res) => {
-    const { name, username, password } = req.body;
-    if (!name || !username || !password) {
+    const { name, username, password } = req.body || {};
+    if (
+      typeof name !== "string" ||
+      typeof password !== "string" ||
+      !isValidUsername(username)
+    ) {
       return res
         .status(400)
-        .json({ status: 400, message: "All fields are required" });
+        .json({ status: 400, message: "Invalid request payload" });
     }
 
     const existingUser = await User.find({ username: username });
